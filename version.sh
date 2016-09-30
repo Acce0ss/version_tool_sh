@@ -137,6 +137,75 @@ EOF
     esac
 }
 
+###
+### BEGIN HELPER FUNCTION SECTION
+###
+
+#find whether string NEEDLE is
+#contained in HAY
+function contains {
+    HAY="$1"
+    NEEDLE="$2"
+    case "$HAY" in
+	*"$NEEDLE"*)
+	    echo 0
+	    ;;
+    esac
+    echo ""
+}
+
+#Gets the version number from configured file,
+#according to the given PATTERN
+function extract_version {
+    local PATTERN="$1"
+    echo `cat "$VERSION_FILE" | sed -rn "s|.*$PATTERN.*|\1|p"`    
+}
+
+#Get the version number part from an item from
+#the version format->value map
+function part_version {
+    local PART="$1"
+    local VALUES=(${PART//:/ })
+    local VERSION=${VALUES[2]}
+    echo $VERSION
+}
+
+#Get the version name part from an item from
+#the version format->value map
+function part_name {
+    local PART="$1"
+    local VALUES=(${PART//:/ })
+    local NAME=${VALUES[1]}
+    echo $NAME
+}
+
+#Get the index, in which pattern/format
+#the given item from the version format->value map
+#belongs to.
+function part_pattern_ind {
+    local PART="$1"
+    local VALUES=(${PART//:/ })
+    local IND=${VALUES[0]}
+    echo $IND
+}
+
+#Makes version string for given format,
+#from given part map.
+function make_version_str {
+    local PART_MAP=(${@:2})
+    local FORMAT="$1"
+    local VER_STR="$FORMAT"
+    for PART in "${PART_MAP[@]}"
+    do
+	local VER_STR=${VER_STR/`part_name $PART`/`part_version $PART`}
+    done
+    echo $VER_STR
+}
+
+###
+### END HELPER FUNCTION SECTION
+###
+
 function do_setup {
     echo "Setting up version.config interactively..."
 
