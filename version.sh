@@ -7,6 +7,8 @@ VERSION_PATTERNS=
 VERSION_FORMATS=
 VERSION_FILE=
 
+#Help at top, for easy reference
+
 function do_help {
     case "$1" in
 	setup)
