@@ -266,13 +266,53 @@ function do_bump {
     echo "Bump minor/major"
 }
 
-if [ -f "$CONFIG_FILE" ]
-then
-    source $CONFIG_FILE
+function read_config {
 
-    VERSION_PATTERNS=(${V_NO_REGEX//\;/ })
-    VERSION_FORMATS=(${VERSION_FORMAT//\;/ })
-fi
+    ### Read the config file and make some essential globals:
+    ### VERSION_PATTERNS: Array of patterns
+    ### VERSION_FORMATS: Array of formats, same order as patterns
+    ### VERSION_PART_MAP: Array of following formatted data:
+    ###                   pattern_ind:format_part_name:part_version
+    ###                   This will be parsed as an array when used.
+    ### UPDATED_PART_MAP: Same as VERSION_PART_MAP, but used to hold
+    ###                   the updates to version values and to produce
+    ###                   the version strings after changes
+    
+    if [ -f "$CONFIG_FILE" ]
+    then
+	source $CONFIG_FILE
+	
+	VERSION_PATTERNS=(${V_NO_REGEX//\;/ })
+	VERSION_FORMATS=(${VERSION_FORMAT//\;/ })
+	
+	for i in "${!VERSION_PATTERNS[@]}"
+	do
+	    local PATTERN="${VERSION_PATTERNS[$i]}"
+	    local FORMAT="${VERSION_FORMATS[$i]}"
+
+	    local HYPHEN_SEP=${FORMAT//-/ }
+	    local FORMAT_PARTS=(${HYPHEN_SEP//./ })
+	    
+	    local VERSION=$(extract_version $PATTERN)
+	    local V_HYPH_SEP=${VERSION//-/ }
+	    local V_PARTS=(${V_HYPH_SEP//./ })
+	    
+	    for j in "${!FORMAT_PARTS[@]}"
+	    do
+		local VERSION_PART_STRING="$VERSION_PART_STRING $i:${FORMAT_PARTS[$j]}:${V_PARTS[$j]}"
+	    done
+
+	    #This is the current map; and will stay constant
+	    VERSION_PART_MAP=($VERSION_PART_STRING)
+
+	    #This is the map that might be updated and written to
+	    #disk if requested
+	    UPDATED_PART_MAP=($VERSION_PART_STRING)
+	done	
+    fi
+}
+
+read_config
 
 if [ $1 ]
 then
