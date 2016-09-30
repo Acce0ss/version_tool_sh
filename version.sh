@@ -239,14 +239,27 @@ function do_setup {
 }
 
 function do_show {
-    case "$1" in
-	*)
-	    for pattern in "${VERSION_PATTERNS[@]}"
-	    do
-		cat "$VERSION_FILE" | sed -rn "s|.*$pattern.*|\1|p"
-	    done
-	    
-    esac
+    TO_SHOW="$1"
+    if [ $TO_SHOW ]
+    then
+	for PART in "${VERSION_PART_MAP[@]}"
+	do
+	    if [ `contains $PART $TO_SHOW` ]
+	    then
+		local VNO=`part_version $PART`
+	    fi
+	done
+	if [ $VNO ]
+	then
+	    echo "$VNO"
+	else
+	    echo "$TO_SHOW not given in configured format!"
+	    exit 1
+	fi
+    else
+	make_version_str ${VERSION_FORMATS[0]} ${VERSION_PART_MAP[@]}
+	make_version_str ${VERSION_FORMATS[1]} ${VERSION_PART_MAP[@]}
+    fi
 }
 
 function do_bump {
