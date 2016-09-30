@@ -206,6 +206,8 @@ function make_version_str {
 ### END HELPER FUNCTION SECTION
 ###
 
+### Begin command implementations
+
 function do_setup {
     echo "Setting up version.config interactively..."
 
