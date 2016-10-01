@@ -153,6 +153,18 @@ function contained_in {
     esac
 }
 
+#test if a string contains a natural number
+function is_natural_num {
+    local MAY_BE_NUM="$1"
+    case $MAY_BE_NUM in
+	''|*[!0-9]*)
+	;;
+	*)
+	    echo 0
+	    ;;
+    esac
+}
+
 #Gets the version number from configured file,
 #according to the given PATTERN
 function extract_version {
