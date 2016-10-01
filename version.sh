@@ -54,7 +54,7 @@ Version format:
     major.minor.hotfix-revision
 
   would result in having 4 bumpable VERSION_PART variables, major, minor, hotfix and revision.
-  Similarly,
+  Each part name must be unique. Similarly,
 
     common_major.common_minor-special_major.special_minor-version_name
 
