@@ -266,8 +266,10 @@ function do_show {
 	    exit 1
 	fi
     else
-	make_version_str ${VERSION_FORMATS[0]} ${VERSION_PART_MAP[@]}
-	make_version_str ${VERSION_FORMATS[1]} ${VERSION_PART_MAP[@]}
+	for VFORMAT in "${VERSION_FORMATS[@]}"
+	do
+	    make_version_str $VFORMAT ${VERSION_PART_MAP[@]}
+	done
     fi
 }
 
