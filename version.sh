@@ -286,7 +286,29 @@ function do_show {
 }
 
 function do_bump {
-    echo "Bump minor/major"
+    local PART_NAME="$1"
+    if [ `exists_in $PART_NAME ${UPDATED_PART_MAP[@]}` ]
+    then
+	for i in ${!UPDATED_PART_MAP[@]}
+	do
+	    if [ `contained_in $PART_NAME ${UPDATED_PART_MAP[$i]}` ]
+	    then
+		local PART=${UPDATED_PART_MAP[$i]}
+		local PART_VERSION=`part_version $PART`
+		if [ `is_natural_num $PART_VERSION` ]
+		then
+		    V_NO=`expr $PART_VERSION + 1`
+		    UPDATED_PART_MAP[$i]="`part_pattern_ind $PART`:`part_name $PART`:$V_NO"
+		    echo "${UPDATED_PART_MAP[@]}"
+		else
+		    echo "Error: Part '$PART_NAME' is not a number. " \
+			 "Use 'version.sh set $PART_NAME newValue' instead?"
+		fi
+	    fi	    
+	done
+    else
+	echo "Error: Part '$PART_NAME' not in configuration."
+    fi
 }
 
 function read_config {
