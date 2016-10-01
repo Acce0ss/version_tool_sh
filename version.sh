@@ -143,15 +143,14 @@ EOF
 
 #find whether string NEEDLE is
 #contained in HAY
-function contains {
-    HAY="$1"
-    NEEDLE="$2"
+function contained_in {
+    NEEDLE="$1"
+    HAY="${@:2}"
     case "$HAY" in
 	*"$NEEDLE"*)
 	    echo 0
 	    ;;
     esac
-    echo ""
 }
 
 #Gets the version number from configured file,
@@ -189,11 +188,21 @@ function part_pattern_ind {
     echo $IND
 }
 
+#Check whether given part name exists.
+function exists_in {
+    local PART_NAME="$1"
+    local PART_MAP=(${@:2})
+    if [ `contained_in ":$PART_NAME:" "${PART_MAP[@]}"` ]
+    then
+	echo 0
+    fi	
+}
+
 #Makes version string for given format,
 #from given part map.
 function make_version_str {
-    local PART_MAP=(${@:2})
     local FORMAT="$1"
+    local PART_MAP=(${@:2})
     local VER_STR="$FORMAT"
     for PART in "${PART_MAP[@]}"
     do
@@ -244,7 +253,7 @@ function do_show {
     then
 	for PART in "${VERSION_PART_MAP[@]}"
 	do
-	    if [ `contains $PART $TO_SHOW` ]
+	    if [ `contained_in $TO_SHOW $PART` ]
 	    then
 		local VNO=`part_version $PART`
 	    fi
