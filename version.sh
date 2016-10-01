@@ -115,7 +115,7 @@ Bumped minor, version: 1.2.0-customer
 
 This won't work:
 $>./version.sh bump name
-Error: version part "name" is not a number.
+Error: Part 'name' is not a number.
 
 EOF
 	    ;;
@@ -262,7 +262,7 @@ function do_show {
 	then
 	    echo "$VNO"
 	else
-	    echo "$TO_SHOW not given in configured format!"
+	    echo "Error: Part $TO_SHOW not in configuration."
 	    exit 1
 	fi
     else
