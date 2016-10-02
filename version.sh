@@ -310,10 +310,13 @@ function do_bump {
 	    then
 		local PART=${UPDATED_PART_MAP[$i]}
 		local PART_VERSION=`part_version $PART`
+		local PART_IND=`part_pattern_ind $PART`
 		if [ `is_natural_num $PART_VERSION` ]
 		then
 		    V_NO=`expr $PART_VERSION + 1`
-		    UPDATED_PART_MAP[$i]="`part_pattern_ind $PART`:`part_name $PART`:$V_NO"
+		    UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$V_NO"
+		    echo "Bumped $PART_NAME, version: " \
+			 `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
 		else
 		    echo "Error: Part '$PART_NAME' is not a number. " \
 			 "Use 'version.sh set $PART_NAME newValue' instead?"
@@ -336,7 +339,10 @@ function do_set {
 	    then
 		local PART=${UPDATED_PART_MAP[$i]}
 		local PART_VERSION=`part_version $PART`
-		UPDATED_PART_MAP[$i]="`part_pattern_ind $PART`:`part_name $PART`:$NEW_VALUE"
+		local PART_IND=`part_pattern_ind $PART`
+		UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$NEW_VALUE"
+		echo "Modified $PART_NAME, version: " \
+		      `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
 	    fi	    
 	done
     else
