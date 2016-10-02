@@ -26,16 +26,21 @@ Version pattern:
 
   <?xml version="1.0" encoding="utf-8"?>
   <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="fi.jalonne.android.roaddataapp"
+      package="fi.fun.android.roaddataapp"
       android:versionCode="14"
       android:versionName="1.14.1" >
   ...
 
   then a pattern to extract versionName would be 
 
-  .*android:versionName="(.*)"
+  android:versionName="(.*)"
 
   where the parentheses mark the spot to extract.
+  WARNING: Only use single parentheses for each pattern!
+           Currently there is no check for this, and pattern with
+           multiple parentheses might cause havoc. Escape all
+           parantheses that do not mark the version string.
+
   You can also give a list of patterns, separated by semicolon (;), 
   if you want to also bump other parts in the same file. As in example 
   above, the versionCode. E.g.
