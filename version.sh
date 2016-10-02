@@ -324,6 +324,25 @@ function do_bump {
     fi
 }
 
+function do_set {
+    local PART_NAME="$1"
+    local NEW_VALUE="$2"
+    if [ `exists_in $PART_NAME ${UPDATED_PART_MAP[@]}` ]
+    then
+	for i in ${!UPDATED_PART_MAP[@]}
+	do
+	    if [ `contained_in $PART_NAME ${UPDATED_PART_MAP[$i]}` ]
+	    then
+		local PART=${UPDATED_PART_MAP[$i]}
+		local PART_VERSION=`part_version $PART`
+		UPDATED_PART_MAP[$i]="`part_pattern_ind $PART`:`part_name $PART`:$NEW_VALUE"
+	    fi	    
+	done
+    else
+	echo "Error: Part '$PART_NAME' not in configuration."
+    fi
+}
+
 function read_config {
 
     ### Read the config file and make some essential globals:
