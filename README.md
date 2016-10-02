@@ -14,6 +14,7 @@ The tool currently has following commands:
  - show
  - bump
  - set
+
 Their help texts are listed below
 
 ## help
