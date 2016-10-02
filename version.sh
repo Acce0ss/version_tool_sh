@@ -51,7 +51,8 @@ Version pattern:
   so that user only needs to give just enough to uniquely identify
   the spot.
 
-  The user can also give a list of formats, as described next.
+  If a list of patterns is given, the user then also needs give a 
+  list of formats, as described next.
 
 Version format: 
   Consist of two groups, dot (.) separated and hyphen (-) separated. E.g.
@@ -120,7 +121,7 @@ Bumped minor, version: 1.2.0-customer
 
 This won't work:
 $>./version.sh bump name
-Error: Part 'name' is not a number.
+Error: Part 'name' is not a number. Use 'version.sh set rev newValue' instead?
 
 EOF
 	    ;;
