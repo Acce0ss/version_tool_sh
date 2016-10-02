@@ -314,7 +314,6 @@ function do_bump {
 		then
 		    V_NO=`expr $PART_VERSION + 1`
 		    UPDATED_PART_MAP[$i]="`part_pattern_ind $PART`:`part_name $PART`:$V_NO"
-		    echo "${UPDATED_PART_MAP[@]}"
 		else
 		    echo "Error: Part '$PART_NAME' is not a number. " \
 			 "Use 'version.sh set $PART_NAME newValue' instead?"
