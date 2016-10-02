@@ -182,9 +182,8 @@ function replace_version {
     local VERSION_STRING="$2"
     local PATTERN_W_NEW_VSTR="${PATTERN//(.*)/$VERSION_STRING}"
     local VERSION_FILE_CONTENT=`cat "$VERSION_FILE" | sed -r "s|$PATTERN|$PATTERN_W_NEW_VSTR|g"`
-    echo "$PATTERN"
-    echo "$PATTERN_W_NEW_VSTR"
-    echo "$VERSION_FILE_CONTENT" # > $VERSION_FILE
+    
+    echo "$VERSION_FILE_CONTENT" > $VERSION_FILE
 }
 
 #Get the version number part from an item from
@@ -371,6 +370,18 @@ function read_config {
     fi
 }
 
+#This recreates the version strings and replaces the old
+#data in given version file.
+function write_updated_version {
+    for i in "${!VERSION_FORMATS[@]}"
+    do
+	local VFORMAT=${VERSION_FORMATS[$i]}
+	local PATTERN=${VERSION_PATTERNS[$i]}
+	local VSTR=`make_version_str $VFORMAT ${UPDATED_PART_MAP[@]}`
+	replace_version $PATTERN $VSTR
+    done
+}
+
 read_config
 
 if [ $1 ]
@@ -393,7 +404,14 @@ then
 	    do_bump $2
 	    ;;
     esac
-	     
+
+    VOLD="${VERSION_PART_MAP[@]}"
+    VNEW="${UPDATED_PART_MAP[@]}"
+    if [ "$VOLD" != "$VNEW" ]
+    then
+	write_updated_version
+    fi
+    
     exit 0
 else
     do_help
