@@ -177,6 +177,16 @@ function extract_version {
     echo `cat "$VERSION_FILE" | sed -rn "s|.*$PATTERN.*|\1|p"`    
 }
 
+function replace_version {
+    local PATTERN="$1"
+    local VERSION_STRING="$2"
+    local PATTERN_W_NEW_VSTR="${PATTERN//(.*)/$VERSION_STRING}"
+    local VERSION_FILE_CONTENT=`cat "$VERSION_FILE" | sed -r "s|$PATTERN|$PATTERN_W_NEW_VSTR|g"`
+    echo "$PATTERN"
+    echo "$PATTERN_W_NEW_VSTR"
+    echo "$VERSION_FILE_CONTENT" # > $VERSION_FILE
+}
+
 #Get the version number part from an item from
 #the version format->value map
 function part_version {
