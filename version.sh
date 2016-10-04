@@ -82,6 +82,16 @@ Cascading
   changes, make minor 0. Thus, bumping generation will zero out both major and
   minor, but changing major will only zero minor.
 
+Auto-incrementing
+  User may set auto-incrementation for some version part. The incrementation may
+  happen always when any other part changes (wildcard, *), or only when certain 
+  part changes. Rules are given as a list. Example rule:
+
+    vcode<-*; major<-generation
+
+  The rules mean the following: bump vcode, if any other part changes. Bump major,
+  if generation changes.
+
 EOF
 	    ;;
 	show)
@@ -292,6 +302,9 @@ function do_setup {
     echo "Give your version number cascading rules (e.g. minor<-major; hotfix<-minor, help for details):"
     read CASCADE_RULES
     
+    echo "Give your version number auto-increment rules (e.g. vcode<-, help for details):"
+    read VERSION_INC_RULES
+
     echo "Check your inputs:"
     echo "Version file path: $VERSION_FILE"
     echo "Version number can be extracted using: $V_NO_REGEX"
