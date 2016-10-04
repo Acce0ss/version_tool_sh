@@ -73,6 +73,15 @@ Version format:
 
   vcode; major.minor.hotfix
 
+Cascading
+  User may give version number cascading rules:
+
+    major<-generation; minor<-major
+
+  These dependency rules mean: If generation changes, make major 0. If major
+  changes, make minor 0. Thus, bumping generation will zero out both major and
+  minor, but changing major will only zero minor.
+
 EOF
 	    ;;
 	show)
@@ -256,6 +265,9 @@ function do_setup {
     echo "Give your version number format (e.g. major.minor.hotfix-rev, help for details):"
     read VERSION_FORMAT
 
+    echo "Give your version number cascading rules (e.g. minor<-major; hotfix<-minor, help for details):"
+    read VERSION_CASC_RULES
+    
     echo "Check your inputs:"
     echo "Version file path: $VERSION_FILE"
     echo "Version number can be extracted using: $V_NO_REGEX"
