@@ -247,6 +247,30 @@ function make_version_str {
     echo $VER_STR
 }
 
+function has_cascade_dependants {
+    local PART_NAME="$1"
+    if [ `contained_in "'$PART_NAME'" "${CASCADE_FUNC_MAP[@]}"` ]
+    then
+	echo 0
+    fi
+}
+
+function cascade {
+    local CHANGED_PART_NAME="$1"
+
+    for CASCADE_MAP in "${CASCADE_MAP[@]}"
+    do
+	local CASCADE_DEPENDENCY="${CASCADE_MAP//:*/}"
+	local CASCADE_DEPENDANT="${CASCADE_MAP//*:/}"
+	
+	if [ "'$CHANGED_PART_NAME'" = "$CASCADE_DEPENDENCY" ]
+	then
+	    echo "Cascading:"
+	    do_set "${CASCADE_DEPENDANT//\'/}" 0
+	fi
+    done
+}
+
 ###
 ### END HELPER FUNCTION SECTION
 ###
@@ -266,12 +290,13 @@ function do_setup {
     read VERSION_FORMAT
 
     echo "Give your version number cascading rules (e.g. minor<-major; hotfix<-minor, help for details):"
-    read VERSION_CASC_RULES
+    read CASCADE_RULES
     
     echo "Check your inputs:"
     echo "Version file path: $VERSION_FILE"
     echo "Version number can be extracted using: $V_NO_REGEX"
-    echo "Version consist of: $VERSION_FORMAT"    
+    echo "Version consist of: $VERSION_FORMAT"
+    echo "Version parts cascade per rules: $CASCADE_RULES"    
 
     read -p "Is the above information correct? (y/n): " CORRECT
     if [ "$CORRECT" = "y" ] || [ "$CORRECT" = "yes" ]
@@ -280,6 +305,7 @@ function do_setup {
 	echo "VERSION_FILE='$VERSION_FILE'" > $CONFIG_FILE
 	echo "V_NO_REGEX='$V_NO_REGEX'" >> $CONFIG_FILE
 	echo "VERSION_FORMAT='$VERSION_FORMAT'" >> $CONFIG_FILE
+	echo "CASCADE_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
 	echo "Done!"
     else
 	echo "Aborting..."
@@ -329,6 +355,10 @@ function do_bump {
 		    UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$V_NO"
 		    echo "Bumped $PART_NAME, version: " \
 			 `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
+
+		    #Cascade on this change
+		    cascade $PART_NAME
+		    
 		else
 		    echo "Error: Part '$PART_NAME' is not a number. " \
 			 "Use 'version.sh set $PART_NAME newValue' instead?"
@@ -343,6 +373,7 @@ function do_bump {
 function do_set {
     local PART_NAME="$1"
     local NEW_VALUE="$2"
+    
     if [ `exists_in $PART_NAME ${UPDATED_PART_MAP[@]}` ]
     then
 	for i in ${!UPDATED_PART_MAP[@]}
@@ -354,7 +385,10 @@ function do_set {
 		local PART_IND=`part_pattern_ind $PART`
 		UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$NEW_VALUE"
 		echo "Modified $PART_NAME, version: " \
-		      `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
+		     `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
+
+		#Cascade on this change
+		cascade $PART_NAME
 	    fi	    
 	done
     else
@@ -373,6 +407,8 @@ function read_config {
     ### UPDATED_PART_MAP: Same as VERSION_PART_MAP, but used to hold
     ###                   the updates to version values and to produce
     ###                   the version strings after changes
+    ### CASCADE_MAP: Contains dependency:dependant mappings. Dependant
+    ###              is zeroed when dependency changes.
     
     if [ -f "$CONFIG_FILE" ]
     then
@@ -380,6 +416,8 @@ function read_config {
 	
 	VERSION_PATTERNS=(${V_NO_REGEX//\;/ })
 	VERSION_FORMATS=(${VERSION_FORMAT//\;/ })
+	CASCADE_RULES=(${CASCADE_RULES//\;/ })
+
 	
 	for i in "${!VERSION_PATTERNS[@]}"
 	do
@@ -404,7 +442,18 @@ function read_config {
 	    #This is the map that might be updated and written to
 	    #disk if requested
 	    UPDATED_PART_MAP=($VERSION_PART_STRING)
-	done	
+	done
+
+	for i in "${!CASCADE_RULES[@]}"
+	do
+	    local DEPENDANT=${CASCADE_RULES[$i]//<-*/}
+	    local DEPENDENCY=${CASCADE_RULES[$i]//*<-/}
+	    local CASCADE_MAP_STRING="$CASCADE_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
+	done
+
+	#This map contains cascading relations, separated by :.
+	CASCADE_MAP=($CASCADE_MAP_STRING)
+
     fi
 }
 
@@ -442,7 +491,7 @@ then
 	    do_bump $2
 	    ;;
     esac
-
+    
     VOLD="${VERSION_PART_MAP[@]}"
     VNEW="${UPDATED_PART_MAP[@]}"
     if [ "$VOLD" != "$VNEW" ]
