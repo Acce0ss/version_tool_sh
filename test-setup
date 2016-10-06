@@ -1,5 +1,5 @@
 test-version
 android:versionCode="(.*)"; android:versionName="(.*)"
-vcode; major.minor.hotfix-rev
+vcode; major.minor.lminor-rev
 y
 
