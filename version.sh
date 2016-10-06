@@ -201,8 +201,8 @@ function part_version {
 function part_name {
     local PART="$1"
     local VALUES=(${PART//:/ })
-    local NAME=${VALUES[1]}
-    echo $NAME
+    local NAME=${VALUES[1]//\'/}
+    echo "$NAME"
 }
 
 #Get the index, in which pattern/format
@@ -219,7 +219,7 @@ function part_pattern_ind {
 function exists_in {
     local PART_NAME="$1"
     local PART_MAP=(${@:2})
-    if [ `contained_in ":$PART_NAME:" "${PART_MAP[@]}"` ]
+    if [ `contained_in ":'$PART_NAME':" "${PART_MAP[@]}"` ]
     then
 	echo 0
     fi	
@@ -280,7 +280,7 @@ function do_show {
     then
 	for PART in "${VERSION_PART_MAP[@]}"
 	do
-	    if [ `contained_in $TO_SHOW $PART` ]
+	    if [ `contained_in "'$TO_SHOW'" $PART` ]
 	    then
 		local VNO=`part_version $PART`
 	    fi
@@ -306,7 +306,7 @@ function do_bump {
     then
 	for i in ${!UPDATED_PART_MAP[@]}
 	do
-	    if [ `contained_in $PART_NAME ${UPDATED_PART_MAP[$i]}` ]
+	    if [ `contained_in "'$PART_NAME'" ${UPDATED_PART_MAP[$i]}` ]
 	    then
 		local PART=${UPDATED_PART_MAP[$i]}
 		local PART_VERSION=`part_version $PART`
@@ -314,7 +314,7 @@ function do_bump {
 		if [ `is_natural_num $PART_VERSION` ]
 		then
 		    V_NO=`expr $PART_VERSION + 1`
-		    UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$V_NO"
+		    UPDATED_PART_MAP[$i]="$PART_IND:'$PART_NAME':$V_NO"
 		    echo "Bumped $PART_NAME, version: " \
 			 `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
 		else
@@ -335,12 +335,12 @@ function do_set {
     then
 	for i in ${!UPDATED_PART_MAP[@]}
 	do
-	    if [ `contained_in $PART_NAME ${UPDATED_PART_MAP[$i]}` ]
+	    if [ `contained_in "'$PART_NAME'" ${UPDATED_PART_MAP[$i]}` ]
 	    then
 		local PART=${UPDATED_PART_MAP[$i]}
 		local PART_VERSION=`part_version $PART`
 		local PART_IND=`part_pattern_ind $PART`
-		UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$NEW_VALUE"
+		UPDATED_PART_MAP[$i]="$PART_IND:'$PART_NAME':$NEW_VALUE"
 		echo "Modified $PART_NAME, version: " \
 		      `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
 	    fi	    
@@ -383,7 +383,7 @@ function read_config {
 	    
 	    for j in "${!FORMAT_PARTS[@]}"
 	    do
-		local VERSION_PART_STRING="$VERSION_PART_STRING $i:${FORMAT_PARTS[$j]}:${V_PARTS[$j]}"
+		local VERSION_PART_STRING="$VERSION_PART_STRING $i:'${FORMAT_PARTS[$j]}':${V_PARTS[$j]}"
 	    done
 
 	    #This is the current map; and will stay constant
