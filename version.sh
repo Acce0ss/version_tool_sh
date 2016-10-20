@@ -431,6 +431,7 @@ function read_config {
 	VERSION_PATTERNS=(${V_NO_REGEX//\;/ })
 	VERSION_FORMATS=(${VERSION_FORMAT//\;/ })
 	CASCADE_RULES=(${CASCADE_RULES//\;/ })
+	AUTOINC_RULES=(${AUTOINC_RULES//\;/ })
 
 	
 	for i in "${!VERSION_PATTERNS[@]}"
@@ -467,6 +468,16 @@ function read_config {
 
 	#This map contains cascading relations, separated by :.
 	CASCADE_MAP=($CASCADE_MAP_STRING)
+
+	for i in "${!AUTOINC_RULES[@]}"
+	do
+	    local DEPENDANT=${AUTOINC_RULES[$i]//<-*/}
+	    local DEPENDENCY=${AUTOINC_RULES[$i]//*<-/}
+	    local AUTOINC_MAP_STRING="$CASCADE_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
+	done
+
+	#This map contains cascading relations, separated by :.
+	AUTOINC_MAP=($AUTOINC_MAP_STRING)
 
     fi
 }
