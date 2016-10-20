@@ -92,6 +92,9 @@ Auto-incrementing
   The rules mean the following: bump vcode, if any other part changes. Bump major,
   if generation changes.
 
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
 EOF
 	    ;;
 	show)
@@ -273,6 +276,15 @@ function has_autoinc_dependants {
     fi    
 }
 
+## Used so that each rule is applied
+## only once; ie. in case of cascading,
+## wildcard increment is only used once.
+function disable_autoinc_rule {
+    local RULE="$1"
+    local AUTOINC_MAP_STR="${AUTOINC_MAP[@]}"
+    AUTOINC_MAP=(${AUTOINC_MAP_STR//$RULE/})
+}
+
 function cascade {
     local CHANGED_PART_NAME="$1"
 
@@ -305,6 +317,7 @@ function autoincrement {
 	       )
 	then
 	    echo "Auto-incrementing:"
+	    disable_autoinc_rule $AUTOINC_MAP
 	    do_bump "${AUTOINC_DEPENDANT//\'/}"
 	fi
     done
