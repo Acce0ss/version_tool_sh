@@ -82,6 +82,9 @@ Cascading
   changes, make minor 0. Thus, bumping generation will zero out both major and
   minor, but changing major will only zero minor.
 
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
 Auto-incrementing
   User may set auto-incrementation for some version part. The incrementation may
   happen always when any other part changes (wildcard, *), or only when certain 
@@ -285,17 +288,26 @@ function disable_autoinc_rule {
     AUTOINC_MAP=(${AUTOINC_MAP_STR//$RULE/})
 }
 
+function disable_cascade_rule {
+    local RULE="$1"
+    local CASCADE_MAP_STR="${CASCADE_MAP[@]}"
+    echo "$RULE"
+    echo "$CASCADE_MAP_STR"
+    CASCADE_MAP=(${CASCADE_MAP_STR//$RULE/})
+}
+
 function cascade {
     local CHANGED_PART_NAME="$1"
 
-    for CASCADE_MAP in "${CASCADE_MAP[@]}"
+    for CMAP in "${CASCADE_MAP[@]}"
     do
-	local CASCADE_DEPENDENCY="${CASCADE_MAP//:*/}"
-	local CASCADE_DEPENDANT="${CASCADE_MAP//*:/}"
+	local CASCADE_DEPENDENCY="${CMAP//:*/}"
+	local CASCADE_DEPENDANT="${CMAP//*:/}"
 	
 	if [ "'$CHANGED_PART_NAME'" = "$CASCADE_DEPENDENCY" ]
 	then
 	    echo "Cascading:"
+	    disable_cascade_rule $CMAP
 	    do_set "${CASCADE_DEPENDANT//\'/}" 0
 	fi
     done
