@@ -351,13 +351,13 @@ function do_setup {
     echo "Give a regular expression to locate the version number inside the file:"
     read V_NO_REGEX
 
-    echo "Give your version number format (e.g. major.minor.hotfix-rev, help for details):"
+    echo "Give your version number format (e.g. vcode; major.minor.hotfix-rev, help for details):"
     read VERSION_FORMAT
 
     echo "Give your version number cascading rules (e.g. minor<-major; hotfix<-minor, help for details):"
     read CASCADE_RULES
     
-    echo "Give your version number auto-increment rules (e.g. vcode<-, help for details):"
+    echo "Give your version number auto-increment rules (e.g. vcode<-*, help for details):"
     read VERSION_INC_RULES
 
     echo "Check your inputs:"
