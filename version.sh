@@ -319,6 +319,7 @@ function do_setup {
 	echo "V_NO_REGEX='$V_NO_REGEX'" >> $CONFIG_FILE
 	echo "VERSION_FORMAT='$VERSION_FORMAT'" >> $CONFIG_FILE
 	echo "CASCADE_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
+	echo "AUTOINC_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
 	echo "Done!"
     else
 	echo "Aborting..."
