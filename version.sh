@@ -504,7 +504,7 @@ function read_config {
 	do
 	    local DEPENDANT=${AUTOINC_RULES[$i]//<-*/}
 	    local DEPENDENCY=${AUTOINC_RULES[$i]//*<-/}
-	    local AUTOINC_MAP_STRING="$CASCADE_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
+	    local AUTOINC_MAP_STRING="$AUTOINC_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
 	done
 
 	#This map contains cascading relations, separated by :.
