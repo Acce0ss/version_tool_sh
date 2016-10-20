@@ -262,7 +262,7 @@ function make_version_str {
 
 function has_cascade_dependants {
     local PART_NAME="$1"
-    if [ `contained_in "'$PART_NAME'" "${CASCADE_FUNC_MAP[@]}"` ]
+    if [ `contained_in "'$PART_NAME'" "${CASCADE_MAP[@]}"` ]
     then
 	echo 0
     fi
