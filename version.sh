@@ -316,10 +316,10 @@ function cascade {
 function autoincrement {
     local CHANGED_PART_NAME="$1"
 
-    for AUTOINC_MAP in "${AUTOINC_MAP[@]}"
+    for AIMAP in "${AUTOINC_MAP[@]}"
     do
-	local AUTOINC_DEPENDENCY="${AUTOINC_MAP//:*/}"
-	local AUTOINC_DEPENDANT="${AUTOINC_MAP//*:/}"
+	local AUTOINC_DEPENDENCY="${AIMAP//:*/}"
+	local AUTOINC_DEPENDANT="${AIMAP//*:/}"
 	
 	if [ "'$CHANGED_PART_NAME'" = "$AUTOINC_DEPENDENCY" ] \
 	       || \
@@ -329,7 +329,7 @@ function autoincrement {
 	       )
 	then
 	    echo "Auto-incrementing:"
-	    disable_autoinc_rule $AUTOINC_MAP
+	    disable_autoinc_rule $AIMAP
 	    do_bump "${AUTOINC_DEPENDANT//\'/}"
 	fi
     done
