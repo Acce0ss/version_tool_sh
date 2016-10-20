@@ -403,7 +403,9 @@ function do_bump {
 
 		    #Cascade on this change
 		    cascade $PART_NAME
-		    
+
+		    #And auto-increment if necessary
+		    autoincrement $PART_NAME
 		else
 		    echo "Error: Part '$PART_NAME' is not a number. " \
 			 "Use 'version.sh set $PART_NAME newValue' instead?"
@@ -434,6 +436,9 @@ function do_set {
 
 		#Cascade on this change
 		cascade $PART_NAME
+
+		#And auto-increment if necessary
+		autoincrement $PART_NAME
 	    fi	    
 	done
     else
