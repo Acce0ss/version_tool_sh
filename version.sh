@@ -265,6 +265,14 @@ function has_cascade_dependants {
     fi
 }
 
+function has_autoinc_dependants {
+    local PART_NAME="$1"
+    if [ `contained_in "'$PART_NAME'" "${AUTOINC_MAP[@]}"` ]
+    then
+	echo 0
+    fi    
+}
+
 function cascade {
     local CHANGED_PART_NAME="$1"
 
@@ -280,6 +288,28 @@ function cascade {
 	fi
     done
 }
+
+function autoincrement {
+    local CHANGED_PART_NAME="$1"
+
+    for AUTOINC_MAP in "${AUTOINC_MAP[@]}"
+    do
+	local AUTOINC_DEPENDENCY="${AUTOINC_MAP//:*/}"
+	local AUTOINC_DEPENDANT="${AUTOINC_MAP//*:/}"
+	
+	if [ "'$CHANGED_PART_NAME'" = "$AUTOINC_DEPENDENCY" ] \
+	       || \
+	       ( \
+		   [ "'$CHANGED_PART_NAME'" != "$AUTOINC_DEPENDANT" ] \
+		       && [ "$AUTOINC_DEPENDENCY" = "'*'" ] \
+	       )
+	then
+	    echo "Auto-incrementing:"
+	    do_bump "${AUTOINC_DEPENDANT//\'/}"
+	fi
+    done
+}
+
 
 ###
 ### END HELPER FUNCTION SECTION
