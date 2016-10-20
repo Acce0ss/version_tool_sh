@@ -309,7 +309,8 @@ function do_setup {
     echo "Version file path: $VERSION_FILE"
     echo "Version number can be extracted using: $V_NO_REGEX"
     echo "Version consist of: $VERSION_FORMAT"
-    echo "Version parts cascade per rules: $CASCADE_RULES"    
+    echo "Version parts cascade per rules: $CASCADE_RULES"
+    echo "Version parts auto-increment per rules: $VERSION_INC_RULES"    
 
     read -p "Is the above information correct? (y/n): " CORRECT
     if [ "$CORRECT" = "y" ] || [ "$CORRECT" = "yes" ]
@@ -319,7 +320,7 @@ function do_setup {
 	echo "V_NO_REGEX='$V_NO_REGEX'" >> $CONFIG_FILE
 	echo "VERSION_FORMAT='$VERSION_FORMAT'" >> $CONFIG_FILE
 	echo "CASCADE_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
-	echo "AUTOINC_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
+	echo "AUTOINC_RULES='$VERSION_INC_RULES'" >> $CONFIG_FILE
 	echo "Done!"
     else
 	echo "Aborting..."
