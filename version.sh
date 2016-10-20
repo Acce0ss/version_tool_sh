@@ -82,6 +82,19 @@ Cascading
   changes, make minor 0. Thus, bumping generation will zero out both major and
   minor, but changing major will only zero minor.
 
+Auto-incrementing
+  User may set auto-incrementation for some version part. The incrementation may
+  happen always when any other part changes (wildcard, *), or only when certain 
+  part changes. Rules are given as a list. Example rule:
+
+    vcode<-*; major<-generation
+
+  The rules mean the following: bump vcode, if any other part changes. Bump major,
+  if generation changes.
+
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
 EOF
 	    ;;
 	show)
@@ -255,6 +268,23 @@ function has_cascade_dependants {
     fi
 }
 
+function has_autoinc_dependants {
+    local PART_NAME="$1"
+    if [ `contained_in "'$PART_NAME'" "${AUTOINC_MAP[@]}"` ]
+    then
+	echo 0
+    fi    
+}
+
+## Used so that each rule is applied
+## only once; ie. in case of cascading,
+## wildcard increment is only used once.
+function disable_autoinc_rule {
+    local RULE="$1"
+    local AUTOINC_MAP_STR="${AUTOINC_MAP[@]}"
+    AUTOINC_MAP=(${AUTOINC_MAP_STR//$RULE/})
+}
+
 function cascade {
     local CHANGED_PART_NAME="$1"
 
@@ -270,6 +300,29 @@ function cascade {
 	fi
     done
 }
+
+function autoincrement {
+    local CHANGED_PART_NAME="$1"
+
+    for AUTOINC_MAP in "${AUTOINC_MAP[@]}"
+    do
+	local AUTOINC_DEPENDENCY="${AUTOINC_MAP//:*/}"
+	local AUTOINC_DEPENDANT="${AUTOINC_MAP//*:/}"
+	
+	if [ "'$CHANGED_PART_NAME'" = "$AUTOINC_DEPENDENCY" ] \
+	       || \
+	       ( \
+		   [ "'$CHANGED_PART_NAME'" != "$AUTOINC_DEPENDANT" ] \
+		       && [ "$AUTOINC_DEPENDENCY" = "'*'" ] \
+	       )
+	then
+	    echo "Auto-incrementing:"
+	    disable_autoinc_rule $AUTOINC_MAP
+	    do_bump "${AUTOINC_DEPENDANT//\'/}"
+	fi
+    done
+}
+
 
 ###
 ### END HELPER FUNCTION SECTION
@@ -292,11 +345,15 @@ function do_setup {
     echo "Give your version number cascading rules (e.g. minor<-major; hotfix<-minor, help for details):"
     read CASCADE_RULES
     
+    echo "Give your version number auto-increment rules (e.g. vcode<-, help for details):"
+    read VERSION_INC_RULES
+
     echo "Check your inputs:"
     echo "Version file path: $VERSION_FILE"
     echo "Version number can be extracted using: $V_NO_REGEX"
     echo "Version consist of: $VERSION_FORMAT"
-    echo "Version parts cascade per rules: $CASCADE_RULES"    
+    echo "Version parts cascade per rules: $CASCADE_RULES"
+    echo "Version parts auto-increment per rules: $VERSION_INC_RULES"    
 
     read -p "Is the above information correct? (y/n): " CORRECT
     if [ "$CORRECT" = "y" ] || [ "$CORRECT" = "yes" ]
@@ -306,6 +363,7 @@ function do_setup {
 	echo "V_NO_REGEX='$V_NO_REGEX'" >> $CONFIG_FILE
 	echo "VERSION_FORMAT='$VERSION_FORMAT'" >> $CONFIG_FILE
 	echo "CASCADE_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
+	echo "AUTOINC_RULES='$VERSION_INC_RULES'" >> $CONFIG_FILE
 	echo "Done!"
     else
 	echo "Aborting..."
@@ -358,7 +416,9 @@ function do_bump {
 
 		    #Cascade on this change
 		    cascade $PART_NAME
-		    
+
+		    #And auto-increment if necessary
+		    autoincrement $PART_NAME
 		else
 		    echo "Error: Part '$PART_NAME' is not a number. " \
 			 "Use 'version.sh set $PART_NAME newValue' instead?"
@@ -389,6 +449,9 @@ function do_set {
 
 		#Cascade on this change
 		cascade $PART_NAME
+
+		#And auto-increment if necessary
+		autoincrement $PART_NAME
 	    fi	    
 	done
     else
@@ -417,6 +480,7 @@ function read_config {
 	VERSION_PATTERNS=(${V_NO_REGEX//\;/ })
 	VERSION_FORMATS=(${VERSION_FORMAT//\;/ })
 	CASCADE_RULES=(${CASCADE_RULES//\;/ })
+	AUTOINC_RULES=(${AUTOINC_RULES//\;/ })
 
 	
 	for i in "${!VERSION_PATTERNS[@]}"
@@ -453,6 +517,16 @@ function read_config {
 
 	#This map contains cascading relations, separated by :.
 	CASCADE_MAP=($CASCADE_MAP_STRING)
+
+	for i in "${!AUTOINC_RULES[@]}"
+	do
+	    local DEPENDANT=${AUTOINC_RULES[$i]//<-*/}
+	    local DEPENDENCY=${AUTOINC_RULES[$i]//*<-/}
+	    local AUTOINC_MAP_STRING="$AUTOINC_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
+	done
+
+	#This map contains cascading relations, separated by :.
+	AUTOINC_MAP=($AUTOINC_MAP_STRING)
 
     fi
 }
