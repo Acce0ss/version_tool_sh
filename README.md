@@ -17,9 +17,10 @@ The tool currently has following commands:
 
 Their help texts are listed below
 
-## help
+##help
 
 ```
+
 Usage: ./version.sh COMMAND [options]
  
 COMMAND:
@@ -30,71 +31,62 @@ setup: Interactive setup to configurate the script. Needs to be run before using
 bump VERSION_PART: Bumps version number up by one, for the given VERSION_PART.
 set VERSION_PART VALUE: Sets the given VERSION_PART to given VALUE.
 show [VERSION_PART]: Shows the version number, or VERSION_PART of it. 
+
 ```
 
-## setup
+##setup
+
+```
 
 Starts an interactive setup for configuring what the scrip needs to know.
 Asks for three things:
 
-### Version filepath:
+Version filepath:
   Path to the file which is to be modified by the script.
 
-### Version pattern:
+Version pattern:
   A regular expression (parseable by grep), that identifies the position
   of the version number in the given file. E.g. if the file contains
 
-```
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="fi.fun.android.roaddataapp"
-    android:versionCode="14"
-    android:versionName="1.14.1" >
-...
-```
+  <?xml version="1.0" encoding="utf-8"?>
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="fi.fun.android.roaddataapp"
+      android:versionCode="14"
+      android:versionName="1.14.1" >
+  ...
 
   then a pattern to extract versionName would be 
 
-```
-android:versionName="(.*)"
-```
+  android:versionName="(.*)"
 
   where the parentheses mark the spot to extract.
-```
   WARNING: Only use single parentheses for each pattern!
            Currently there is no check for this, and pattern with
            multiple parentheses might cause havoc. Escape all
            parantheses that do not mark the version string.
-```
 
   You can also give a list of patterns, separated by semicolon (;), 
   if you want to also bump other parts in the same file. As in example 
   above, the versionCode. E.g.
 
-```
-android:versionCode="(.*)"; android:versionName="(.*)"
-```
+  android:versionCode="(.*)"; android:versionName="(.*)"
 
   The script automatically adds ".*" to start and end of the pattern,
   so that user only needs to give just enough to uniquely identify
   the spot.
 
-  If a list of patterns is given, the user then also needs give a                                  
-  list of formats, as described next. 
+  If a list of patterns is given, the user then also needs give a 
+  list of formats, as described next.
 
-### Version format: 
+Version format: 
   Consist of two groups, dot (.) separated and hyphen (-) separated. E.g.
 
-```
-major.minor.hotfix-revision
-```
+    major.minor.hotfix-revision
 
   would result in having 4 bumpable VERSION_PART variables, major, minor, hotfix and revision.
   Each part name must be unique. Similarly,
 
-```
-common_major.common_minor-special_major.special_minor-version_name
-```
+    common_major.common_minor-special_major.special_minor-version_name
 
   would result in 5 variables. It is also possible to directly set the version
   variable, which is more sensible for "version_name" rather than bumping.
@@ -103,56 +95,85 @@ common_major.common_minor-special_major.special_minor-version_name
   are separated by semicolon (;) and there has to be equal order and number of items
   as in the patterns list. For example (following the android example):'
 
-```
-vcode; major.minor.hotfix
+  vcode; major.minor.hotfix
+
+Cascading
+  User may give version number cascading rules:
+
+    major<-generation; minor<-major
+
+  These dependency rules mean: If generation changes, make major 0. If major
+  changes, make minor 0. Thus, bumping generation will zero out both major and
+  minor, but changing major will only zero minor.
+
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
+Auto-incrementing
+  User may set auto-incrementation for some version part. The incrementation may
+  happen always when any other part changes (wildcard, *), or only when certain 
+  part changes. Rules are given as a list. Example rule:
+
+    vcode<-*; major<-generation
+
+  The rules mean the following: bump vcode, if any other part changes. Bump major,
+  if generation changes.
+
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
 ```
 
-## show
-
-Display the version number, or part of it.
-E.g. version number format setup to major.minor.hotfix-rev:
+##bump
 
 ```
-$>./version.sh show
-0.1.0-1
-$>./version.sh show minor
-1
-$>./version.sh show hotfix
-0
-```
-
-## bump
 
 Bump (+1) a part of the version number. Only makes sense for
-numeric (natural number) values.
+numeric values.
 E.g. version number format setup to major.minor.hotfix-name
 and version number 0.1.0-customer:
 
-```
 $>./version.sh bump major
 Bumped major, version: 1.1.0-customer
 $>./version.sh bump minor
 Bumped minor, version: 1.2.0-customer
-```
 
 This won't work:
-
-```
 $>./version.sh bump name
 Error: Part 'name' is not a number. Use 'version.sh set rev newValue' instead?
+
 ```
 
-## set
+##set
+
+```
 
 Set a part of the version number to a value.
 E.g. version number format setup to major.minor.hotfix-rev
 and version number 0.1.0-1:
 
-```
 $>./version.sh set rev 3
 Modified rev, version: 0.1.0-3
 $>./version.sh set minor 3
 Modified minor, version: 0.2.0-3
 $>./version.sh set hotfix 1
 Modified hotfix, version: 0.2.1-3
+
 ```
+
+##show
+
+```
+
+Display the version number, or part of it.
+E.g. version number format setup to major.minor.hotfix-rev:
+
+$>./version.sh show
+0.1.0-1
+$>./version.sh show minor
+1
+$>./version.sh show hotfix
+0
+
+```
+

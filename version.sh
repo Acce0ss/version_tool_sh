@@ -73,6 +73,31 @@ Version format:
 
   vcode; major.minor.hotfix
 
+Cascading
+  User may give version number cascading rules:
+
+    major<-generation; minor<-major
+
+  These dependency rules mean: If generation changes, make major 0. If major
+  changes, make minor 0. Thus, bumping generation will zero out both major and
+  minor, but changing major will only zero minor.
+
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
+Auto-incrementing
+  User may set auto-incrementation for some version part. The incrementation may
+  happen always when any other part changes (wildcard, *), or only when certain 
+  part changes. Rules are given as a list. Example rule:
+
+    vcode<-*; major<-generation
+
+  The rules mean the following: bump vcode, if any other part changes. Bump major,
+  if generation changes.
+
+  Each rule is applied ONCE, thus interdepencies (major<-minor; minor<-major)
+  do not cause infinite loops.
+
 EOF
 	    ;;
 	show)
@@ -201,8 +226,8 @@ function part_version {
 function part_name {
     local PART="$1"
     local VALUES=(${PART//:/ })
-    local NAME=${VALUES[1]}
-    echo $NAME
+    local NAME=${VALUES[1]//\'/}
+    echo "$NAME"
 }
 
 #Get the index, in which pattern/format
@@ -219,7 +244,7 @@ function part_pattern_ind {
 function exists_in {
     local PART_NAME="$1"
     local PART_MAP=(${@:2})
-    if [ `contained_in ":$PART_NAME:" "${PART_MAP[@]}"` ]
+    if [ `contained_in ":'$PART_NAME':" "${PART_MAP[@]}"` ]
     then
 	echo 0
     fi	
@@ -238,6 +263,79 @@ function make_version_str {
     echo $VER_STR
 }
 
+function has_cascade_dependants {
+    local PART_NAME="$1"
+    if [ `contained_in "'$PART_NAME'" "${CASCADE_MAP[@]}"` ]
+    then
+	echo 0
+    fi
+}
+
+function has_autoinc_dependants {
+    local PART_NAME="$1"
+    if [ `contained_in "'$PART_NAME'" "${AUTOINC_MAP[@]}"` ]
+    then
+	echo 0
+    fi    
+}
+
+## Used so that each rule is applied
+## only once; ie. in case of cascading,
+## wildcard increment is only used once.
+function disable_autoinc_rule {
+    local RULE="$1"
+    local AUTOINC_MAP_STR="${AUTOINC_MAP[@]}"
+    AUTOINC_MAP=(${AUTOINC_MAP_STR//$RULE/})
+}
+
+function disable_cascade_rule {
+    local RULE="$1"
+    local CASCADE_MAP_STR="${CASCADE_MAP[@]}"
+    echo "$RULE"
+    echo "$CASCADE_MAP_STR"
+    CASCADE_MAP=(${CASCADE_MAP_STR//$RULE/})
+}
+
+function cascade {
+    local CHANGED_PART_NAME="$1"
+
+    for CMAP in "${CASCADE_MAP[@]}"
+    do
+	local CASCADE_DEPENDENCY="${CMAP//:*/}"
+	local CASCADE_DEPENDANT="${CMAP//*:/}"
+	
+	if [ "'$CHANGED_PART_NAME'" = "$CASCADE_DEPENDENCY" ]
+	then
+	    echo "Cascading:"
+	    disable_cascade_rule $CMAP
+	    do_set "${CASCADE_DEPENDANT//\'/}" 0
+	fi
+    done
+}
+
+function autoincrement {
+    local CHANGED_PART_NAME="$1"
+
+    for AIMAP in "${AUTOINC_MAP[@]}"
+    do
+	local AUTOINC_DEPENDENCY="${AIMAP//:*/}"
+	local AUTOINC_DEPENDANT="${AIMAP//*:/}"
+	
+	if [ "'$CHANGED_PART_NAME'" = "$AUTOINC_DEPENDENCY" ] \
+	       || \
+	       ( \
+		   [ "'$CHANGED_PART_NAME'" != "$AUTOINC_DEPENDANT" ] \
+		       && [ "$AUTOINC_DEPENDENCY" = "'*'" ] \
+	       )
+	then
+	    echo "Auto-incrementing:"
+	    disable_autoinc_rule $AIMAP
+	    do_bump "${AUTOINC_DEPENDANT//\'/}"
+	fi
+    done
+}
+
+
 ###
 ### END HELPER FUNCTION SECTION
 ###
@@ -253,13 +351,21 @@ function do_setup {
     echo "Give a regular expression to locate the version number inside the file:"
     read V_NO_REGEX
 
-    echo "Give your version number format (e.g. major.minor.hotfix-rev, help for details):"
+    echo "Give your version number format (e.g. vcode; major.minor.hotfix-rev, help for details):"
     read VERSION_FORMAT
+
+    echo "Give your version number cascading rules (e.g. minor<-major; hotfix<-minor, help for details):"
+    read CASCADE_RULES
+    
+    echo "Give your version number auto-increment rules (e.g. vcode<-*, help for details):"
+    read VERSION_INC_RULES
 
     echo "Check your inputs:"
     echo "Version file path: $VERSION_FILE"
     echo "Version number can be extracted using: $V_NO_REGEX"
-    echo "Version consist of: $VERSION_FORMAT"    
+    echo "Version consist of: $VERSION_FORMAT"
+    echo "Version parts cascade per rules: $CASCADE_RULES"
+    echo "Version parts auto-increment per rules: $VERSION_INC_RULES"    
 
     read -p "Is the above information correct? (y/n): " CORRECT
     if [ "$CORRECT" = "y" ] || [ "$CORRECT" = "yes" ]
@@ -268,6 +374,8 @@ function do_setup {
 	echo "VERSION_FILE='$VERSION_FILE'" > $CONFIG_FILE
 	echo "V_NO_REGEX='$V_NO_REGEX'" >> $CONFIG_FILE
 	echo "VERSION_FORMAT='$VERSION_FORMAT'" >> $CONFIG_FILE
+	echo "CASCADE_RULES='$CASCADE_RULES'" >> $CONFIG_FILE
+	echo "AUTOINC_RULES='$VERSION_INC_RULES'" >> $CONFIG_FILE
 	echo "Done!"
     else
 	echo "Aborting..."
@@ -280,7 +388,7 @@ function do_show {
     then
 	for PART in "${VERSION_PART_MAP[@]}"
 	do
-	    if [ `contained_in $TO_SHOW $PART` ]
+	    if [ `contained_in "'$TO_SHOW'" $PART` ]
 	    then
 		local VNO=`part_version $PART`
 	    fi
@@ -306,7 +414,7 @@ function do_bump {
     then
 	for i in ${!UPDATED_PART_MAP[@]}
 	do
-	    if [ `contained_in $PART_NAME ${UPDATED_PART_MAP[$i]}` ]
+	    if [ `contained_in "'$PART_NAME'" ${UPDATED_PART_MAP[$i]}` ]
 	    then
 		local PART=${UPDATED_PART_MAP[$i]}
 		local PART_VERSION=`part_version $PART`
@@ -314,9 +422,15 @@ function do_bump {
 		if [ `is_natural_num $PART_VERSION` ]
 		then
 		    V_NO=`expr $PART_VERSION + 1`
-		    UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$V_NO"
+		    UPDATED_PART_MAP[$i]="$PART_IND:'$PART_NAME':$V_NO"
 		    echo "Bumped $PART_NAME, version: " \
 			 `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
+
+		    #Cascade on this change
+		    cascade $PART_NAME
+
+		    #And auto-increment if necessary
+		    autoincrement $PART_NAME
 		else
 		    echo "Error: Part '$PART_NAME' is not a number. " \
 			 "Use 'version.sh set $PART_NAME newValue' instead?"
@@ -331,18 +445,25 @@ function do_bump {
 function do_set {
     local PART_NAME="$1"
     local NEW_VALUE="$2"
+    
     if [ `exists_in $PART_NAME ${UPDATED_PART_MAP[@]}` ]
     then
 	for i in ${!UPDATED_PART_MAP[@]}
 	do
-	    if [ `contained_in $PART_NAME ${UPDATED_PART_MAP[$i]}` ]
+	    if [ `contained_in "'$PART_NAME'" ${UPDATED_PART_MAP[$i]}` ]
 	    then
 		local PART=${UPDATED_PART_MAP[$i]}
 		local PART_VERSION=`part_version $PART`
 		local PART_IND=`part_pattern_ind $PART`
-		UPDATED_PART_MAP[$i]="$PART_IND:$PART_NAME:$NEW_VALUE"
+		UPDATED_PART_MAP[$i]="$PART_IND:'$PART_NAME':$NEW_VALUE"
 		echo "Modified $PART_NAME, version: " \
-		      `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
+		     `make_version_str ${VERSION_FORMATS[$PART_IND]} ${UPDATED_PART_MAP[@]}`
+
+		#Cascade on this change
+		cascade $PART_NAME
+
+		#And auto-increment if necessary
+		autoincrement $PART_NAME
 	    fi	    
 	done
     else
@@ -361,6 +482,8 @@ function read_config {
     ### UPDATED_PART_MAP: Same as VERSION_PART_MAP, but used to hold
     ###                   the updates to version values and to produce
     ###                   the version strings after changes
+    ### CASCADE_MAP: Contains dependency:dependant mappings. Dependant
+    ###              is zeroed when dependency changes.
     
     if [ -f "$CONFIG_FILE" ]
     then
@@ -368,6 +491,9 @@ function read_config {
 	
 	VERSION_PATTERNS=(${V_NO_REGEX//\;/ })
 	VERSION_FORMATS=(${VERSION_FORMAT//\;/ })
+	CASCADE_RULES=(${CASCADE_RULES//\;/ })
+	AUTOINC_RULES=(${AUTOINC_RULES//\;/ })
+
 	
 	for i in "${!VERSION_PATTERNS[@]}"
 	do
@@ -383,7 +509,7 @@ function read_config {
 	    
 	    for j in "${!FORMAT_PARTS[@]}"
 	    do
-		local VERSION_PART_STRING="$VERSION_PART_STRING $i:${FORMAT_PARTS[$j]}:${V_PARTS[$j]}"
+		local VERSION_PART_STRING="$VERSION_PART_STRING $i:'${FORMAT_PARTS[$j]}':${V_PARTS[$j]}"
 	    done
 
 	    #This is the current map; and will stay constant
@@ -392,7 +518,28 @@ function read_config {
 	    #This is the map that might be updated and written to
 	    #disk if requested
 	    UPDATED_PART_MAP=($VERSION_PART_STRING)
-	done	
+	done
+
+	for i in "${!CASCADE_RULES[@]}"
+	do
+	    local DEPENDANT=${CASCADE_RULES[$i]//<-*/}
+	    local DEPENDENCY=${CASCADE_RULES[$i]//*<-/}
+	    local CASCADE_MAP_STRING="$CASCADE_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
+	done
+
+	#This map contains cascading relations, separated by :.
+	CASCADE_MAP=($CASCADE_MAP_STRING)
+
+	for i in "${!AUTOINC_RULES[@]}"
+	do
+	    local DEPENDANT=${AUTOINC_RULES[$i]//<-*/}
+	    local DEPENDENCY=${AUTOINC_RULES[$i]//*<-/}
+	    local AUTOINC_MAP_STRING="$AUTOINC_MAP_STRING '$DEPENDENCY':'$DEPENDANT'"
+	done
+
+	#This map contains cascading relations, separated by :.
+	AUTOINC_MAP=($AUTOINC_MAP_STRING)
+
     fi
 }
 
@@ -430,7 +577,7 @@ then
 	    do_bump $2
 	    ;;
     esac
-
+    
     VOLD="${VERSION_PART_MAP[@]}"
     VNEW="${UPDATED_PART_MAP[@]}"
     if [ "$VOLD" != "$VNEW" ]

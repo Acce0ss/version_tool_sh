@@ -1,7 +1,6 @@
 test-version
 android:versionCode="(.*)"; android:versionName="(.*)"
 vcode; major.minor.lminor-rev
-minor<-major; lminor<-minor
-vcode<-*
+minor<-major; lminor<-minor; major<-lminor
+vcode<-*; major<-vcode
 y
-
